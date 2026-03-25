@@ -97,6 +97,7 @@ Remove-Item "$env:LOCALAPPDATA\codex-auth\bin\codex-auth-auto.exe" -Force -Error
 | `codex-auth switch [<email>]` | Switch active account interactively or by partial match |
 | `codex-auth remove` | Remove accounts with interactive multi-select |
 | `codex-auth status` | Show auto-switch, service, and usage status |
+| `codex-auth proxy start` | Start the local proxy server (port 8080) |
 
 > `codex-auth add` is still accepted as a deprecated alias for `codex-auth login`.
 
@@ -115,6 +116,7 @@ Remove-Item "$env:LOCALAPPDATA\codex-auth\bin\codex-auth-auto.exe" -Force -Error
 | `codex-auth config auto enable\|disable` | Enable or disable background auto-switching |
 | `codex-auth config auto [--5h <%>] [--weekly <%>]` | Set auto-switch thresholds |
 | `codex-auth config api enable\|disable` | Use API-backed fallback or local-only usage refresh |
+| `codex-auth config proxy-port <port>` | Set the local proxy port (default 8080) |
 
 ---
 
@@ -266,6 +268,63 @@ codex-auth config api disable
 Changing `config api` updates `registry.json` immediately. `api enable` is shown as API mode and `api disable` is shown as local mode.
 
 Implementation details are documented in [`docs/auto-switch.md`](docs/auto-switch.md).
+
+## Local Proxy Service
+
+The local proxy allows seamless, uninterrupted AI usage by automatically rotating through your accounts or custom providers when quota limits are reached.
+
+### How it works
+
+1.  **Prioritization**: The proxy always uses your native ChatGPT accounts first.
+2.  **Fallback**: When all accounts are exhausted (429 Rate Limit), it automatically switches to your custom providers (like OpenRouter).
+3.  **Transparency**: Supports streaming (SSE) and preserves all request paths and headers.
+
+### Step 1: Configure Providers
+
+Create `~/.codex/providers.json` with your custom OpenAI-compatible providers:
+
+```json
+{
+  "providers": [
+    {
+      "name": "my-openrouter",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-..."
+    }
+  ]
+}
+```
+
+### Step 2: Start the Proxy
+
+```shell
+# Standard start
+codex-auth proxy start
+
+# Start on a custom port
+PROXY_PORT=9090 codex-auth proxy start
+```
+
+### Step 3: Point Codex to Local Proxy
+
+Update your `~/.codex/config.toml` to use the local proxy:
+
+```toml
+[model_providers.myproxy]
+name = "myproxy"
+base_url = "http://localhost:8080/v1"
+
+# Set as default or use per model
+model_provider = "myproxy"
+```
+
+### Logging
+
+The proxy provides detailed logs for every request:
+- Account/Provider type and email
+- Model name
+- Token usage (prompts, completion, total)
+- Real-time streaming status
 
 ## Q&A
 
