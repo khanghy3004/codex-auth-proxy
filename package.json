@@ -1,6 +1,6 @@
 {
   "name": "codex-auth-proxy",
-  "version": "0.3.1",
+  "version": "0.1.0",
   "description": "Rotating proxy service for Codex accounts",
   "license": "MIT",
   "repository": {
