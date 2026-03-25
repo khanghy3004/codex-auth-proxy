@@ -42,15 +42,16 @@ async function handleProxyRequest(req: Request, res: Response) {
 
       let response: ProviderResponse;
       if (account.type === 'chatgpt') {
-        console.log(`[Proxy] [Debug] Forwarding to ChatGPT: ${relativePath}`);
         response = await openaiProvider.forward(req.body, account, relativePath, req.headers);
       } else {
-        const fullUrl = `${account.baseUrl}${relativePath}`;
-        console.log(`[Proxy] [Debug] Forwarding to Custom Provider: ${fullUrl}`);
-        console.log(`[Proxy] [Debug] Request Body:`, JSON.stringify(req.body).slice(0, 500));
+        const body = { ...req.body };
+        // For standard OpenAI/OpenRouter providers, ask for usage in the stream
+        if (body.stream) {
+          body.stream_options = { include_usage: true };
+        }
         
         const custom = new GenericOpenAIProvider(account.email, account.baseUrl!, account.access_token!);
-        response = await custom.forward(req.body, account, relativePath, req.headers);
+        response = await custom.forward(body, account, relativePath, req.headers);
       }
 
       // Handle streaming response
@@ -69,30 +70,18 @@ async function handleProxyRequest(req: Request, res: Response) {
         // Use PassThrough as a middleman to observe the stream without affecting the main pipe
         const observer = new PassThrough();
         let totalUsage: any = null;
-        let chunkCount = 0;
         
-        console.log(`[Proxy] [Debug] Starting stream for ${account.email}`);
-
         observer.on('data', (chunk: any) => {
-          chunkCount++;
           const content = chunk.toString();
-          if (chunkCount === 1) {
-            console.log(`[Proxy] [Debug] First chunk received (len: ${content.length}): ${content.slice(0, 50)}...`);
-          }
-
           const lines = content.split('\n');
           for (const line of lines) {
             if (line.startsWith('data: ')) {
                const dataStr = line.slice(6).trim();
-               if (dataStr === '[DONE]') {
-                 console.log(`[Proxy] [Debug] [DONE] received`);
-                 continue;
-               }
+               if (dataStr === '[DONE]') continue;
                try {
                  const data = JSON.parse(dataStr);
                  if (data.usage) {
                    totalUsage = data.usage;
-                   console.log(`[Proxy] [Debug] Usage found in stream:`, totalUsage);
                  }
                } catch {}
             }
@@ -100,38 +89,19 @@ async function handleProxyRequest(req: Request, res: Response) {
         });
 
         observer.on('end', () => {
-          console.log(`[Proxy] [Debug] Stream OBSERVER ended (Total chunks: ${chunkCount})`);
           if (totalUsage) {
             console.log(`[Proxy] Usage: prompts=${totalUsage.prompt_tokens}, completion=${totalUsage.completion_tokens}, total=${totalUsage.total_tokens}`);
+          } else {
+             // If still no usage found, it might be in a different format or missing
+             console.log(`[Proxy] Usage: (No usage reported in stream)`);
           }
         });
 
-        observer.on('error', (err) => {
-          console.error(`[Proxy] [Debug] Stream OBSERVER error:`, err);
-        });
-
         // Single chain pipeline
-        response.data.on('error', (err: any) => {
-          console.error(`[Proxy] [Debug] Provider stream error:`, err);
-        });
-
-        response.data.on('close', () => {
-          console.log(`[Proxy] [Debug] Provider stream closed`);
-        });
-
-        res.on('finish', () => {
-          console.log(`[Proxy] [Debug] Client response finished`);
-        });
-
-        res.on('close', () => {
-          console.log(`[Proxy] [Debug] Client response closed (was it canceled?)`);
-        });
-
         response.data.pipe(observer).pipe(res);
 
         // Handle client disconnect
         req.on('close', () => {
-          console.log(`[Proxy] [Debug] Client request closed`);
           response.data.destroy();
           observer.destroy();
         });
@@ -142,7 +112,6 @@ async function handleProxyRequest(req: Request, res: Response) {
           const u = response.data.usage;
           console.log(`[Proxy] Usage: prompts=${u.prompt_tokens}, completion=${u.completion_tokens}, total=${u.total_tokens}`);
         }
-        console.log(`[Proxy] Response:`, JSON.stringify(response.data).slice(0, 500));
         res.status(response.status).json(response.data);
         return;
       }
