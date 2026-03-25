@@ -1,4 +1,4 @@
-# Codex Auth
+# Codex Auth Proxy
 
 ![command list](https://github.com/user-attachments/assets/6c13a2d6-f9da-47ea-8ec8-0394fc072d40)
 
@@ -30,7 +30,7 @@ After that, you can use `codex login` or `codex-auth login` to sign in and add a
 Install with npm:
 
 ```shell
-npm install -g @loongphy/codex-auth
+npm install -g @khanghy3004/codex-auth-proxy
 ```
 
   You can also run it without a global install:

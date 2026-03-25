@@ -1,15 +1,15 @@
 {
-  "name": "@khanghy3004/codex-auth",
+  "name": "@khanghy3004/codex-auth-proxy",
   "version": "0.3.0",
-  "description": "CLI for switching Codex accounts with built-in rotating proxy support",
+  "description": "Rotating proxy service for Codex accounts",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/khanghy3004/codex-auth"
+    "url": "https://github.com/khanghy3004/codex-auth-proxy"
   },
-  "homepage": "https://github.com/khanghy3004/codex-auth",
+  "homepage": "https://github.com/khanghy3004/codex-auth-proxy",
   "bugs": {
-    "url": "https://github.com/khanghy3004/codex-auth/issues"
+    "url": "https://github.com/khanghy3004/codex-auth-proxy/issues"
   },
   "bin": {
     "codex-auth": "bin/codex-auth.js"
