@@ -6,10 +6,10 @@ const fs = require("node:fs");
 const rootPackageJsonPath = path.join(__dirname, "..", "package.json");
 
 const packageMap = {
-  "linux:x64": "@loongphy/codex-auth-proxy-linux-x64",
-  "darwin:x64": "@loongphy/codex-auth-proxy-darwin-x64",
-  "darwin:arm64": "@loongphy/codex-auth-proxy-darwin-arm64",
-  "win32:x64": "@loongphy/codex-auth-proxy-win32-x64"
+  "linux:x64": "@loongphy/codex-auth-linux-x64",
+  "darwin:x64": "@loongphy/codex-auth-darwin-x64",
+  "darwin:arm64": "@loongphy/codex-auth-darwin-arm64",
+  "win32:x64": "@loongphy/codex-auth-win32-x64"
 };
 
 function readRootPackage() {
@@ -66,7 +66,7 @@ function resolveBinary() {
 
   try {
     const packageRoot = path.dirname(require.resolve(`${packageName}/package.json`));
-    const binaryName = process.platform === "win32" ? "codex-auth-proxy.exe" : "codex-auth-proxy";
+    const binaryName = process.platform === "win32" ? "codex-auth.exe" : "codex-auth";
     const binaryPath = path.join(packageRoot, "bin", binaryName);
     if (!fs.existsSync(binaryPath)) {
       console.error(`Missing binary inside ${packageName}: ${binaryPath}`);
@@ -75,7 +75,7 @@ function resolveBinary() {
     return binaryPath;
   } catch (error) {
     console.error(
-      `Missing platform package ${packageName}. Reinstall @loongphy/codex-auth-proxy on ${process.platform}/${process.arch}.`
+      `Missing platform package ${packageName}. Reinstall @loongphy/codex-auth on ${process.platform}/${process.arch}.`
     );
     if (error && error.message) {
       console.error(error.message);
